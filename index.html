@@ -1496,7 +1496,7 @@ const GEOCODEUR = "https://data.geopf.fr/geocodage/search";
 /* Repère de construction, injecté par outils/construire.py. Affiché dans le
    tiroir : c'est le seul moyen sûr de savoir quelle version on regarde quand
    un cache s'en mêle. */
-const VERSION = "2026-09-28 15:37";
+const VERSION = "2026-09-28 15:51";
 
 const Z0 = 19;                               // zoom de référence
 const COTE = 256;
@@ -2595,6 +2595,55 @@ function construireChemin(depart, liste, ferme) {
      Un CIRCUIT n'a pas de bouts : ni l'un ni l'autre. */
   const vAff = lisser(regime, abs, aF, aR, false, false);
   const vRle = lisser(plafond, abs, aF, aR, !ferme, false);
+
+  /* LE VIRAGE SE PREND À LA VITESSE ÉCRITE, PAS À CELLE D'UN FREINAGE OU D'UNE
+     RELANCE.
+
+     « J'ai mis 25 avant le virage et 20 dans le virage, et accident à 27 — je
+     peux rien y faire. » Il avait raison, et c'était l'application. Un point
+     fixe la vitesse EN L'ATTEIGNANT : la voiture freinait donc jusqu'au dernier
+     mètre avant le sommet du virage, et relançait dès le premier mètre après —
+     à 3,5 m/s², franchement. Or la courbe qui passe par un coin est la plus
+     serrée justement autour de son sommet. Relevé sur un angle droit : rayon
+     de 6 m, la voiture à 26 km/h trois mètres après le point à 20, 8,3 m/s² —
+     glissade. Le moniteur avait écrit une vitesse juste ; c'est le passage
+     d'une vitesse à l'autre qui ne l'était pas.
+
+     Ce n'est pas le retour du bridage en courbe, retiré parce qu'il décidait
+     des vitesses à la place du moniteur. Celui-ci ne touche à AUCUNE vitesse
+     écrite ; il ne règle que les transitions, comme le ferait un conducteur :
+
+     - en FREINANT vers un point plus lent, on arrive au virage déjà ralenti —
+       on freine plus tôt, jamais plus bas que la vitesse écrite au point ;
+     - en RELANÇANT, on n'accélère pas plus vite que le virage ne le tient —
+       on attend qu'il s'ouvre.
+
+     Une vitesse ÉCRITE trop forte pour le virage, elle, passe telle quelle, et
+     la glissade arrive : c'est sa décision, et c'est elle qu'on juge. Une marge
+     de 8 % sous l'adhérence sépare les deux, pour que la transition ne frôle
+     jamais la limite qui punit. */
+  const MARGE_TENUE = 0.92;
+  const geo = { pts: pts, abs: abs, total: total, vRle: regime };
+  const tenue = new Float64Array(m);
+  for (let i = 0; i < m; i++) {
+    const c = rayonCourbure(geo, abs[i]);
+    tenue[i] = isFinite(c.R) ? Math.sqrt(ADHERENCE * MARGE_TENUE * c.R * mParU) / mParU : Infinity;
+  }
+  // la vitesse écrite au point vers lequel on roule
+  const vise = new Float64Array(m);
+  for (let k = 0; k < n - 1; k++)
+    for (let i = sSommet[k]; i <= sSommet[k+1]; i++) vise[i] = cible[k+1];
+  for (let i = 0; i < m; i++) vRle[i] = Math.min(vRle[i], Math.max(tenue[i], vise[i]));
+  for (let i = m - 2; i >= 0; i--) {
+    const d = abs[i+1] - abs[i];
+    vRle[i] = Math.min(vRle[i], Math.sqrt(vRle[i+1] * vRle[i+1] + 2 * aF * d));
+  }
+  for (let i = 1; i < m; i++) {
+    const d = abs[i] - abs[i-1];
+    let v = Math.min(vRle[i], Math.sqrt(vRle[i-1] * vRle[i-1] + 2 * aR * d));
+    if (v > vRle[i-1] && v > tenue[i]) v = Math.max(vRle[i-1], tenue[i]);
+    vRle[i] = v;
+  }
 
   /* Les arrêts marqués : un point à zéro, c'est un stop. Trois secondes, le
      temps de regarder à droite puis à gauche. */
