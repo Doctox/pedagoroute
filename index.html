@@ -1496,7 +1496,7 @@ const GEOCODEUR = "https://data.geopf.fr/geocodage/search";
 /* Repère de construction, injecté par outils/construire.py. Affiché dans le
    tiroir : c'est le seul moyen sûr de savoir quelle version on regarde quand
    un cache s'en mêle. */
-const VERSION = "2026-09-28 14:39";
+const VERSION = "2026-09-28 15:16";
 
 const Z0 = 19;                               // zoom de référence
 const COTE = 256;
@@ -8641,6 +8641,66 @@ els.btnPosition.addEventListener('click', function () {
 els.btnNord.addEventListener('click', function () { tourner(-vue.cap); });
 
 /* =================================================================
+   ON OUVRE LÀ OÙ L'ON EST
+   =================================================================
+   « Quand on ouvre le site, je veux que la première zone soit celle de la
+   position GPS du moniteur. » L'application ouvrait sur la dernière carte
+   laissée — ou sur le giratoire de Lagny la première fois. En voiture, c'est
+   toujours ailleurs que là où l'on est, et il fallait aller chercher sa rue.
+
+   On demande donc la position dès l'ouverture, et on y va. Trois retenues :
+
+   - SI LE DOIGT A DÉJÀ TOUCHÉ LA CARTE, on ne bouge pas. Le GPS peut mettre
+     dix secondes à répondre ; sauter ailleurs pendant qu'on trace serait pire
+     que de ne rien faire ;
+   - LA VOITURE VIENT AVEC, mais seulement sur une planche sans tracé. Une
+     trajectoire laissée la veille part d'elle : la déplacer la casserait.
+     Sans tracé, en revanche, une voiture restée à Lagny ferait partir le
+     premier point posé de l'autre bout de la carte ;
+   - CHEZ L'ÉLÈVE, jamais : c'est l'exercice qui choisit où l'on est.
+
+   La position n'est demandée que sur une adresse sûre (https) : sur le réseau
+   de la maison, le navigateur la refuse de toute façon. */
+let dejaTouche = false;
+
+function ouvrirOuJeSuis() {
+  if (modeEleve || !navigator.geolocation || !window.isSecureContext) return;
+  navigator.geolocation.getCurrentPosition(function (pos) {
+    if (dejaTouche || modeEleve) return;
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    if (!seance.points.length) {
+      const p = projeter(lat, lon);
+      seance.voiture.x = p.x; seance.voiture.y = p.y;
+      seance.voiture.absente = false;
+      seance.voiture.repris = false;           // le premier calage reprend la main
+      /* En roulant, le GPS donne le cap : la voiture est posée dans le sens
+         où l'on va. À l'arrêt il n'en donne pas — le calage sur la route s'en
+         chargera. (Boussole : 0 au nord ; ici : 0 à l'est, 90 au sud.) */
+      const h = pos.coords.heading;
+      if (h != null && !isNaN(h) && (pos.coords.speed || 0) > 1.5) capRepos = h - 90;
+      caleSurLaRoute(0);
+    }
+    centrer(lat, lon, 1.4);
+    redessiner();
+    annoncer('Vous êtes ici.');
+  }, function () {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+}
+
+/* La voiture posée au point GPS se range dans sa voie dès que les routes du
+   secteur sont arrivées. Elles se chargent après le déplacement de la carte :
+   on repasse quelques fois, puis on laisse tomber — la voiture reste alors au
+   point GPS, ce qui n'est déjà pas loin. */
+function caleSurLaRoute(essai) {
+  if (dejaTouche || seance.voiture.repris || seance.points.length) return;
+  if (reseauPour(seance.voiture)) {
+    recalerPrise({ type: 'voiture' }, true);
+    redessiner();
+    return;
+  }
+  if (essai < 12) setTimeout(function () { caleSurLaRoute(essai + 1); }, 700);
+}
+
+/* =================================================================
    Le doigt : un doigt pose et déplace, deux doigts se déplacent sur
    la carte et l'agrandissent.
    ================================================================= */
@@ -8959,6 +9019,7 @@ els.encarts.querySelectorAll('[data-encart]').forEach(function (b) {
 
 els.plateau.addEventListener('pointerdown', function (ev) {
   if (consigneOuverte) { ev.preventDefault(); return; }
+  dejaTouche = true;
   if (ev.target.closest('.flottant, .pile')) return;
   if (!els.tiroir.hidden) return;
   ev.preventDefault();
@@ -10256,8 +10317,10 @@ const codeExercice = (location.hash.match(/^#exo=(.+)$/) || [])[1] || null;
    par un menu pour choisir « une explication » était une porte pour rien. */
 majBandeau();
 if (codeExercice) ouvrirExerciceEleve(codeExercice);
-else if (chargerSeance(lire(CLE_COURANTE)))
-  annoncer('Reprise de la séance en cours.');
+else {
+  if (chargerSeance(lire(CLE_COURANTE))) annoncer('Reprise de la séance en cours.');
+  ouvrirOuJeSuis();
+}
 
 if ('serviceWorker' in navigator) {
   /* Si un service worker contrôlait déjà la page, son remplacement signifie
