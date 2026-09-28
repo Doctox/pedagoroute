@@ -1496,7 +1496,7 @@ const GEOCODEUR = "https://data.geopf.fr/geocodage/search";
 /* Repère de construction, injecté par outils/construire.py. Affiché dans le
    tiroir : c'est le seul moyen sûr de savoir quelle version on regarde quand
    un cache s'en mêle. */
-const VERSION = "2026-09-28 15:16";
+const VERSION = "2026-09-28 15:24";
 
 const Z0 = 19;                               // zoom de référence
 const COTE = 256;
@@ -4567,8 +4567,9 @@ function recalerPrise(pris, neuf) {
     const p = ob && ob.points[pris.j];
     if (!p) return;
     if (p.repris) { majCircuit(ob); return; }
-    if (!neuf) p.repris = true;
-    const r = caler(p, capMarcheObstacle(ob, pris.j), !neuf);
+    // déplacé à la main : il reste où on le lâche (voir le point de trajectoire)
+    if (!neuf) { p.repris = true; majCircuit(ob); return; }
+    const r = caler(p, capMarcheObstacle(ob, pris.j), false);
     if (r) { p.x = r.x; p.y = r.y; }
     majCircuit(ob);
     return;
@@ -4582,17 +4583,24 @@ function recalerPrise(pris, neuf) {
   if (pris.type === 'point') {
     const p = mesPoints()[pris.i];
     if (!p) return;
-    /* Le PREMIER déplacement à la main choisit une voie, sur la chaussée
-       entière : tiré de l'autre côté de l'axe, le point se centre dans la voie
-       d'en face au lieu d'être ramené dans la nôtre. C'est ce qui rend un
-       dépassement traçable sans rien lâcher du centrage.
-       Le SECOND déplacement, et les suivants, laissent le point exactement où
-       on le met. S'il faut y revenir, c'est que le calage tombe à côté — axe
-       d'OpenStreetMap décalé, largeur de voie devinée trop large — et
-       l'application n'a plus à insister. */
+    /* LA POSE SE CALE, LE DÉPLACEMENT NON.
+
+       La règle était : la pose cale le point dans sa voie, le PREMIER
+       déplacement le recale — sur la chaussée entière, pour tracer un
+       dépassement —, et seuls les suivants le laissaient où on le lâche. À
+       l'usage, ça donnait ceci : « je pose mon point ; je veux le bouger, il se
+       remet ; je le rebouge, il bouge ». Un point qu'on déplace de deux mètres
+       dans sa voie était recentré… à l'endroit exact d'où on venait de le
+       tirer. Le geste ne servait à rien, une fois sur deux, sans qu'on sache
+       pourquoi.
+
+       Un point qu'on déplace est un point qu'on corrige : il reste où on le
+       lâche, dès la première fois. La pose, elle, continue de viser la rue et
+       de se ranger dans la voie — c'est là qu'on tape sans regarder. Pour un
+       dépassement, on lâche le point dans l'autre voie, et il y reste. */
     if (p.repris) return;
-    if (!neuf) p.repris = true;
-    const r = caler(p, capMarche(pris.i), !neuf);
+    if (!neuf) { p.repris = true; return; }
+    const r = caler(p, capMarche(pris.i), false);
     if (r) { p.x = r.x; p.y = r.y; }
   } else {
     /* La voiture auto-école suit la même règle que les points : le PREMIER
