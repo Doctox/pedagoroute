@@ -356,6 +356,58 @@ body.modeEleve #btnAccueil{ display:grid; }
 .peVide{ margin:18px 4px; font-size:13px; line-height:1.5; color:var(--craie-2); }
 .peVide b{ color:var(--craie); }
 
+/* ---------- LES GUIDES ----------
+   Des chapitres qui se déplient, un seul ouvert à l'arrivée. Le corps est
+   aligné sur le titre, et les étapes gardent leur numéro dans la marge. */
+#pageGuide{ z-index:45; }
+.gIntro{ margin:0 2px 10px; font-size:13.5px; line-height:1.5; color:var(--craie-2); }
+.gChap{ border-radius:14px; background:rgba(238,241,238,.05); }
+.gChap.fort{ background:rgba(255,171,26,.08); box-shadow:inset 0 0 0 1.5px rgba(255,171,26,.32); }
+.gTete{
+  appearance:none; display:flex; align-items:center; gap:11px; width:100%;
+  padding:12px; border:none; background:transparent; color:var(--craie);
+  font:inherit; text-align:left; cursor:pointer; touch-action:manipulation;
+}
+.gNum{
+  flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  font-size:12px; font-weight:800; background:rgba(238,241,238,.1);
+}
+.gChap.fort .gNum{ background:var(--ambre); color:#17191c; }
+.gTete .deux{ flex:1 1 auto; min-width:0; display:grid; gap:2px; }
+.gTete .b1{ font-size:14px; font-weight:800; }
+.gTete .b2{ font-size:11px; font-weight:600; color:var(--craie-2); }
+.gTete .chev{ flex:0 0 auto; width:14px; height:14px; color:var(--craie-3);
+              transform:rotate(-90deg); transition:transform .16s ease; }
+.gTete[aria-expanded="true"] .chev{ transform:none; color:var(--ambre); }
+.gCorps{ padding:0 14px 14px 49px; display:grid; gap:10px; }
+.gCorps[hidden]{ display:none; }
+.gCorps ol{ margin:0; padding:0; list-style:none; counter-reset:g; display:grid; gap:9px; }
+.gCorps li{ position:relative; font-size:13px; line-height:1.55; color:var(--craie); }
+.gCorps li::before{
+  counter-increment:g; content:counter(g); position:absolute; left:-21px; top:1px;
+  font-size:10.5px; font-weight:800; color:var(--craie-3);
+}
+.gCorps b{ font-weight:800; }
+.gNote{ margin:0; padding:9px 11px; border-radius:10px; font-size:12.5px; line-height:1.5; color:var(--craie); }
+.gNote::before{ font-weight:800; }
+.gNote.astuce{ background:rgba(74,163,255,.1); border-left:3px solid var(--bleu); }
+.gNote.astuce::before{ content:'Astuce — '; color:var(--bleu); }
+.gNote.savoir{ background:rgba(255,171,26,.09); border-left:3px solid var(--ambre); }
+.gNote.savoir::before{ content:'À savoir — '; color:var(--ambre); }
+.gCorps .bord{ justify-self:start; }
+/* Les icônes dans le texte sont celles des boutons, prises sur les boutons. */
+.gIco{
+  display:inline-grid; place-items:center; width:25px; height:22px; margin:0 1px;
+  vertical-align:-6px; border-radius:7px; background:rgba(238,241,238,.11); color:var(--craie);
+}
+.gIco svg{ width:15px; height:15px; }
+.gIco.cligno{ color:var(--ambre); }
+.gIco.retroInt{ color:#2fd6c4; }
+.gIco.retroExt{ color:#ffd24a; }
+.gIco.angle{ color:var(--bleu); }
+.gIco.regard{ color:#c07bff; }
+.gIco.lecture{ color:var(--vert-clair); }
+
 /* Le QR : blanc sur fond blanc, carré, le plus grand possible dans la feuille —
    l'appareil photo de l'élève le lit mieux s'il n'a pas à zoomer. */
 .cadreQr{ display:grid; place-items:center; padding:4px 0; }
@@ -1233,6 +1285,16 @@ button:focus-visible, .champ:focus-visible{ outline:3px solid #ffa63d; outline-o
       Ma position
     </button>
 
+    <!-- Le guide : c'est ici qu'on vient quand on ne sait plus. -->
+    <button class="rangee" type="button" id="btnGuide">
+      <svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor"
+           stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 6.1C9 4.6 6.6 4.3 3.8 5.2v12.1c2.8-.9 5.2-.6 7.2.9 2-1.5 4.4-1.8 7.2-.9V5.2c-2.8-.9-5.2-.6-7.2.9Z"/>
+        <path d="M11 6.1v12.1"/>
+      </svg>
+      Guide du moniteur
+    </button>
+
     <!-- LES RÉGLAGES SE REPLIENT.
 
          Ils étaient tous déroulés, les uns sous les autres : cinq rubriques à
@@ -1401,8 +1463,27 @@ button:focus-visible, .champ:focus-visible{ outline:3px solid #ffa63d; outline-o
              stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
       </button>
       <span class="page-titre">Mes exercices</span>
+      <button class="bord" type="button" id="peGuide">
+        <svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8.3"/><path d="M8.7 8.6a2.4 2.4 0 1 1 3.4 2.2c-.7.3-1.1.9-1.1 1.6v.5"/>
+          <circle cx="11" cy="15.6" r=".6" fill="currentColor"/></svg>
+        Guide
+      </button>
     </div>
     <div class="page-corps"><div id="peListe"></div></div>
+  </div>
+
+  <!-- LE GUIDE : moniteur ou élève, la même page. -->
+  <div class="page" id="pageGuide" hidden>
+    <div class="page-tete">
+      <button class="platRond" type="button" id="guRetour" title="Retour" aria-label="Retour">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
+      </button>
+      <span class="page-titre" id="guTitre">Guide</span>
+    </div>
+    <div class="page-corps" id="guCorps"></div>
   </div>
 
   <div class="edition flottant" id="edition">
@@ -1534,7 +1615,7 @@ const GEOCODEUR = "https://data.geopf.fr/geocodage/search";
 /* Repère de construction, injecté par outils/construire.py. Affiché dans le
    tiroir : c'est le seul moyen sûr de savoir quelle version on regarde quand
    un cache s'en mêle. */
-const VERSION = "2026-09-28 16:24";
+const VERSION = "2026-09-28 16:43";
 
 const Z0 = 19;                               // zoom de référence
 const COTE = 256;
@@ -2078,6 +2159,7 @@ const els = {};
  'btnAction','btnGarder','btnBiblio','actions','feuilleGarder','bilan',
  'pageCours','voileCours','pcRetour','pcRanger','pcListe',
  'btnAccueil','pageEleve','peRetour','peListe',
+ 'btnGuide','pageGuide','guRetour','guTitre','guCorps','peGuide',
  'btnPartager','btnColler','echangeTexte'].forEach(id => { els[id] = document.getElementById(id); });
 
 /* =================================================================
@@ -5496,7 +5578,19 @@ function poserVueEleve(v) {
   /* CE QU'ON ATTEND SE RELÈVE AVANT DE PARTIR. Les critères se lisent dans le
      modèle — ses engagements, ses carrés, son arrivée — et une fois en essai,
      `chemin` est le tracé de l'élève : il serait trop tard. */
-  if (!vueEleve && v) releverAttendu();
+  /* …ET SUR LE MODÈLE À JOUR. Ouvert depuis « Mes cours », la scène vient
+     d'être chargée et `chemin` est encore celui de la précédente : il ne se
+     refait qu'à la prochaine image. On le refait ici, sur le modèle, avant de
+     mesurer — et on remesure aussi quand on était déjà en essai, puisque la
+     scène a pu changer sous nos pieds. */
+  if (v) {
+    const etait = vueEleve;
+    vueEleve = false;
+    chemin = construireChemin();
+    seance.obstacles.forEach(function (ob) { ob.chemin = cheminObstacle(ob); });
+    releverAttendu();
+    vueEleve = etait;
+  }
   fermerBilan();
   vueEleve = !!v;
   marquerVueEleve();
@@ -8570,7 +8664,7 @@ function montrerConsigne() {
   [['Pose ton trajet', 'Appuie sur la carte, point par point, jusqu’au drapeau.'],
    ['Règle tes vitesses', 'Reste appuyé sur un point pour choisir sa vitesse.'],
    ['Montre tes gestes', 'Pendant que ça roule : clignotant, rétros, regards.'],
-   ['Roule', '▶ pour voir ce que ça donne. Tu peux tout effacer et recommencer.']]
+   ['Roule', 'Maintiens ▶ : la voiture avance tant que tu appuies. Tu peux tout effacer et recommencer.']]
   .forEach(function (l) {
     const d = document.createElement('div');
     d.className = 'etape';
@@ -8589,6 +8683,14 @@ function montrerConsigne() {
     document.body.classList.remove('enConsigne');
   });
   f.appendChild(ok);
+  /* La première fois, on a besoin d'en savoir un peu plus que quatre lignes.
+     Le guide s'ouvre par-dessus : la consigne attend dessous. */
+  const aide = document.createElement('button');
+  aide.type = 'button'; aide.className = 'coche2';
+  aide.style.justifyContent = 'center';
+  aide.textContent = 'Comment ça marche';
+  aide.addEventListener('click', function (ev) { ev.stopPropagation(); ouvrirGuide('eleve'); });
+  f.appendChild(aide);
   f.hidden = false;
   consigneOuverte = true;
   document.body.classList.add('enConsigne');
@@ -8701,7 +8803,7 @@ function blocCours(liste, idObjectif) {
   if (!liste.length) {
     const p = document.createElement('p');
     p.className = 'vide';
-    p.textContent = 'Rien encore. Le + en bas y met la scène de la carte.';
+    p.textContent = 'Rien encore — la disquette range ici la carte à l’écran.';
     d.appendChild(p);
   }
   return d;
@@ -9478,11 +9580,15 @@ els.plateau.addEventListener('pointerdown', function (ev) {
         : 'Point du suivi de route retiré — la ligne est droite.');
     }
     else if (prise && prise.type === 'pointObstacle') {
-      seance.obstacles[prise.i].points.splice(prise.j, 1);
-      majCircuit(seance.obstacles[prise.i]);
+      const ob = seance.obstacles[prise.i], j = prise.j, p = ob.points[j];
+      ob.points.splice(j, 1);
+      majCircuit(ob);
+      noter(function () { ob.points.splice(j, 0, p); majCircuit(ob); });
     }
     else if (prise && prise.type === 'obstacle') {
-      seance.obstacles.splice(prise.i, 1); obstacleActif = -1;
+      const i = prise.i, ob = seance.obstacles[i];
+      seance.obstacles.splice(i, 1); obstacleActif = -1;
+      noter(function () { seance.obstacles.splice(i, 0, ob); });
     }
     else if (prise && prise.type === 'geste') {
       const l = mesGestes(), i = prise.i, g = l[i];
@@ -9850,7 +9956,7 @@ els.plateau.addEventListener('wheel', function (ev) {
 let pedale = false;
 
 function prendrePedale(ev) {
-  if (els.btnLecture.disabled || pedale || consigneOuverte) return;
+  if (els.btnLecture.disabled || pedale || consigneOuverte || !els.pageGuide.hidden) return;
   if (ev.preventDefault) ev.preventDefault();
 
   /* Cours ouvert : interrupteur, pas pédale. On ne tient pas le doigt pendant
@@ -10610,6 +10716,325 @@ Object.keys(SOURCES).forEach(function (id) {
 if (window.ResizeObserver) new ResizeObserver(dimensionner).observe(els.plateau);
 else window.addEventListener('resize', dimensionner);
 
+/* =================================================================
+   LES GUIDES
+   =================================================================
+   « Est-ce qu'on pourrait faire un tuto moniteur et un tuto élève ? Surtout
+   celui des moniteurs, pour bien expliquer comment fonctionne l'appli et
+   comment on peut l'utiliser au mieux. »
+
+   UNE PAGE, PAS UNE VISITE GUIDÉE. Une visite montre les boutons un par un,
+   une fois, et ne se relit pas ; un guide se relit, dans l'ordre qu'on veut,
+   le jour où l'on a oublié comment on boucle un véhicule. Des chapitres
+   courts, qui tiennent seuls, et le dernier dit comment aller vite en leçon —
+   c'est la vraie question derrière « trop long à mettre en place ».
+
+   LES VRAIES ICÔNES. Celles du texte sont prises sur les boutons eux-mêmes au
+   moment d'ouvrir : un dessin qui change ici ne laisse pas le guide en retard.
+
+   Tout ce qui y est dit a été relu sur le code, pas sur l'historique : un
+   panneau Stop ne fait pas s'arrêter la voiture, par exemple, et le guide le
+   dit. Si ça change, le guide change avec.
+
+   Le guide du moniteur s'ouvre de lui-même une fois, au premier lancement ;
+   ensuite il est dans la loupe. Celui de l'élève est dans « Mes exercices »,
+   sur la consigne, et au bout du chapitre « Envoyer » du moniteur. */
+const CLE_GUIDE = 'pedago.guide.v1';
+
+const ICONES_GUIDE = {
+  lecture:   '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M7 4.2 21 13 7 21.8Z" fill="currentColor"/></svg>',
+  arret:     '#btnArret svg',
+  annuler:   '#btnAnnuler svg',
+  gomme:     '#outil [data-type="gomme"] svg',
+  main:      '#outil [data-type="main"] svg',
+  garder:    '#btnGarder svg',
+  biblio:    '#btnBiblio svg',
+  menu:      '#btnAction svg',
+  loupe:     '#btnLieu svg',
+  maison:    '#btnAccueil svg',
+  nord:      '#btnNord svg',
+  cligno:    '#clignoD .ico',
+  retroInt:  '.cle[data-geste="rétro intérieur"] .ico',
+  retroExt:  '.cle[data-geste="rétro extérieur"][data-cote="droite"] .ico',
+  angle:     '.cle[data-geste="angle mort"][data-cote="droite"] .ico',
+  regard:    '.cle[data-geste="regard"][data-cote="droite"] .ico',
+  point:     function () { return JETON_POINT; },
+  camembert: function () { return JETON_CAMEMB; },
+  voiture:   function () { return '<svg viewBox="0 0 22 22" aria-hidden="true">' + OBSTACLES[0].icone + '</svg>'; }
+};
+
+function icoGuide(nom) {
+  const v = ICONES_GUIDE[nom];
+  let svg = '';
+  if (typeof v === 'function') svg = v();
+  else if (v && v.charAt(0) === '<') svg = v;
+  else if (v) {
+    const e = document.querySelector(v);
+    // une copie ne garde pas les identifiants : ils sont uniques, et pris
+    if (e) svg = e.outerHTML.replace(/\sid="[^"]*"/g, '');
+  }
+  return svg ? '<span class="gIco ' + nom + '">' + svg + '</span>' : '';
+}
+const remplirGuide = txt => txt.replace(/\{(\w+)\}/g, (m, nom) => icoGuide(nom));
+
+const GUIDES = {
+  moniteur: {
+    titre: 'Guide du moniteur',
+    intro: 'Tu poses la voiture auto-école sur la vraie photo du carrefour, tu traces, et elle roule — avec les clignotants, les contrôles et les autres usagers. Chaque chapitre se lit seul ; le dernier dit comment aller vite en leçon.',
+    chapitres: [
+      { titre: 'L’essentiel', sous: 'Poser, tracer, rouler',
+        etapes: [
+          'À l’ouverture, la carte se centre là où tu es. La voiture auto-école, c’est l’orange ; tant qu’elle n’a pas de trajet, le rond pointillé autour d’elle sert à la tourner.',
+          'Touche le gros bouton d’outil, en bas à gauche : il affiche {point} <b>Point</b>. Appuie ensuite sur la carte là où la voiture doit aller. Le trajet suit la route tout seul : un point par virage ou par carrefour suffit.',
+          'Maintiens {lecture} : la voiture roule tant que tu appuies, et s’arrête dès que tu lâches. {arret} la ramène au départ et te rend les outils.'
+        ],
+        astuce: 'C’est une pédale : lâcher, c’est faire pause pour expliquer. Sur un ordinateur, la barre d’espace fait la même chose.' },
+
+      { titre: 'Tracer et régler les vitesses', sous: 'Points, zones, arrêts',
+        etapes: [
+          'Chaque appui ajoute un point au bout du trajet. Entre deux de tes points, l’appli suit la route et sème de petits points de guidage.',
+          'Sans réglage, la voiture roule à la vitesse de la route, lue sur OpenStreetMap.',
+          'Reste appuyé sur un point : le pavé des vitesses s’ouvre. Tape une vitesse, ou fais −5 / +5. <b>Arrêt</b> fait marquer l’arrêt 3 secondes sur ce point ; <b>Route</b> rend la vitesse de la route.',
+          'Deux points à la même vitesse — 30 et 30 — font une zone : tous les points entre eux roulent à 30, sauf ceux que tu as réglés à la main.',
+          'Le trait prend la couleur de la vitesse : rouge à l’arrêt, vert quand c’est lent, orange vers 50, bleu au-delà de 65.'
+        ],
+        savoir: 'Trop vite dans un virage serré, la voiture part en glissade : un giratoire à plus de 30 km/h, c’est la perte de contrôle. L’appli freine et relance comme un conducteur, mais ne touche jamais à la vitesse que tu as écrite.' },
+
+      { titre: 'Corriger', sous: 'Déplacer, gommer, annuler',
+        etapes: [
+          'Avec l’outil Point, fais glisser un point pour le déplacer : il reste exactement où tu le lâches. Une loupe au-dessus du doigt montre où tu vises.',
+          '{gomme} <b>Gomme</b> : touche ce que tu veux retirer — un point, un véhicule, un panneau, un camembert, un carré de geste. Sur les petits points de guidage, elle retire tout le tronçon : la ligne redevient droite entre tes deux points.',
+          '{main} <b>Main</b> : déplace la carte. Un point tiré à la main décale le trajet sur le côté, en douceur sur 60 m de part et d’autre — pour serrer à droite ou élargir un virage.',
+          '{annuler} <b>Annuler</b> défait la dernière action : un ajout, un déplacement, une vitesse, un effacement.',
+          '<b>Tout effacer</b> est en bas de la feuille d’outils : deux appuis pour confirmer, et ça ne s’annule pas.'
+        ],
+        astuce: 'Après la gomme ou la main, un appui sur le gros bouton d’outil te rend l’outil de pose.' },
+
+      { titre: 'Montrer les gestes', sous: 'Clignotant, rétros, angle mort, regard',
+        etapes: [
+          'Dès que la voiture roule, la télécommande remplace les outils, en bas à gauche.',
+          'Appuie au moment voulu, avec un autre doigt pendant que tu tiens {lecture} : {cligno} clignotant (un deuxième appui le coupe), {retroInt} rétro intérieur, {retroExt} rétros extérieurs, {angle} angles morts, {regard} regards à gauche et à droite.',
+          'Chaque geste laisse un carré de sa couleur sur le trajet, et se rejoue tout seul à chaque passage.',
+          'À l’arrêt, fais glisser un carré le long du trajet pour l’avancer ou le reculer, ou efface-le à la {gomme}.'
+        ],
+        astuce: 'Joue d’abord le trajet sans rien, puis repasse en ajoutant les gestes : l’élève voit l’ordre se construire.' },
+
+      { titre: 'Les autres usagers', sous: 'Voitures, camions, vélos, piétons',
+        etapes: [
+          'Dans la feuille d’outils, choisis {voiture} <b>Voiture</b> et touche la carte : elle se pose, d’une autre couleur à chaque fois.',
+          'Reste appuyé dessus pour en faire un camion, un vélo ou un piéton.',
+          'Pour la faire rouler : touche-la pour la sélectionner, prends l’outil {point} Point et pose son trajet. Touche la voiture auto-école pour revenir au tien.',
+          'Finis son trajet en touchant le véhicule lui-même : il boucle et tourne sans fin, comme sur un giratoire chargé. Sans boucle, il refait son trajet depuis le départ ; sans point, il reste garé.',
+          'Si ta voiture en touche un sans avoir ralenti, c’est l’accident.'
+        ],
+        savoir: 'La priorité à droite se lit toute seule : un véhicule qui vient de ta droite et croise ton trajet, sans stop devant lui, oblige ta voiture à ralentir. Sinon, c’est une faute.' },
+
+      { titre: 'Le camembert', sous: 'Ce qu’on contrôle avant de s’engager',
+        etapes: [
+          'Le camembert, c’est la part de la chaussée à vérifier avant d’entrer : vert quand elle est libre, rouge quand un véhicule qui roule y passe.',
+          'Choisis {camembert} <b>Camembert</b> et appuie à l’entrée du carrefour ; garde le doigt et glisse pour le tourner vers la circulation. Sur un giratoire, il se cale tout seul au centre.',
+          'Ses poignées blanches : les deux bords l’ouvrent ou le ferment, le milieu de l’arc le tourne et l’allonge, la pointe le déplace.',
+          'Quand ta voiture arrive : si elle a ralenti et que c’est occupé, elle s’arrête et attend que ça se libère. Si elle arrive trop vite, c’est un engagement sans contrôle — et l’accident si quelqu’un passe.'
+        ],
+        savoir: '« Ralenti », ça dépend de la rue : sous 21 km/h en zone 30, sous 30 km/h en ville à 50.' },
+
+      { titre: 'Panneaux et feux', sous: 'Le décor',
+        etapes: [
+          'Dans <b>Signalisation</b> : Stop, Cédez le passage, Feu tricolore, Sens interdit, Sens unique. Le panneau se range tout seul au bord de la route.',
+          'Touche un feu pour changer sa couleur : rouge, orange, vert, éteint. Avec l’outil Sens unique, touche une flèche pour la retourner.',
+          'Les cases à cocher montrent les panneaux relevés sur la carte ; touche deux fois l’un d’eux pour le prendre à ton compte et le déplacer.'
+        ],
+        savoir: 'Les panneaux sont du décor : ils ne commandent pas la voiture. Pour un stop, règle aussi le point de la ligne sur <b>Arrêt</b>.' },
+
+      { titre: 'Ranger ses cours', sous: 'Explication, cours, exercice',
+        etapes: [
+          'Tant que tu n’as rien enregistré, tu es en <b>explication</b> : tu traces, tu montres, rien n’est rangé. La carte est quand même gardée si le téléphone se verrouille.',
+          '{garder} <b>Enregistrer</b> : choisis <b>Cours</b> (à montrer en leçon) ou <b>Exercice</b> (à envoyer à un élève), un nom, un chapitre. Tout part dedans : trajet, vitesses, véhicules, panneaux, camemberts, gestes.',
+          '{biblio} <b>Mes cours</b> : tes cours, rangés par chapitre. Touche-en un pour l’ouvrir ; un exercice s’ouvre tout de suite comme l’élève le verra.',
+          '<b>Modifier</b>, en haut de Mes cours : renommer, changer de chapitre, créer ou réordonner les chapitres, supprimer — tout de suite, sans retour.',
+          'Quand un cours est ouvert, la disquette propose <b>Remplacer</b> ou <b>En faire un nouveau</b>. {menu} → <b>Revenir à une explication</b> le laisse rangé tel quel.'
+        ],
+        savoir: 'Tes cours vivent dans ce téléphone, à cette adresse. Pour passer une carte à un autre appareil : Mes cours → <b>Copier la séance</b>, puis <b>Coller une séance</b> de l’autre côté.' },
+
+      { titre: 'Tester comme un élève', sous: 'Le banc d’essai',
+        etapes: [
+          '{menu} → <b>Passer l’exercice</b> : ton tracé se cache. Il reste la voiture, les autres usagers et le drapeau à damier, là où ton trajet finit.',
+          'Trace, règle, roule, fais tes gestes, exactement comme l’élève.',
+          'À l’arrivée, le verdict : <b>Le code</b> — arriver au drapeau, sans accrochage, céder le passage — et <b>Ma méthode</b> — ralentir à temps, et les gestes de ton modèle, faits avant de s’engager.',
+          '{menu} → <b>Revenir au modèle</b> : ton cours revient, ton essai reste de côté.'
+        ],
+        astuce: 'Le verdict pose les questions de ton modèle : chaque geste que tu y as mis devient une question. Pas de clignotant dans le modèle, pas de clignotant demandé.' },
+
+      { titre: 'Envoyer à un élève', sous: 'QR code ou lien',
+        etapes: [
+          'Ouvre un cours ou un exercice rangé, puis {menu} → <b>L’envoyer à un élève</b>.',
+          'En voiture, tends ton téléphone : l’élève vise le QR code avec l’appareil photo du sien. À distance : <b>Partager</b> ou <b>Copier le lien</b>, pour un SMS ou WhatsApp.',
+          'L’élève reçoit la scène sans ton tracé ni tes gestes : le corrigé ne part pas. Chez lui, l’exercice reste dans « Mes exercices », avec son meilleur résultat.',
+          '<b>L’ouvrir comme l’élève</b> te montre exactement ce qu’il verra.'
+        ],
+        savoir: 'Ce qui part, c’est la carte telle qu’elle est à l’écran, même avec des retouches pas encore enregistrées.',
+        bouton: { texte: 'Voir le guide de l’élève', guide: 'eleve' } },
+
+      { titre: 'La carte', sous: 'Lieu, fond, réglages',
+        etapes: [
+          '{loupe} : cherche une adresse ou une commune, ou reviens à <b>Ma position</b>.',
+          'Deux doigts : déplacer, zoomer et tourner la carte. La boussole {nord} remet le nord en haut.',
+          '<b>Réglages</b>, dans la loupe : le fond de carte (Esri, plus récent ; IGN, qui marche sans réseau), suivre la route ou tracer en ligne directe, rouler au milieu de la voie ou le long du trottoir, montrer l’axe des routes ou les trottoirs, le conducteur en encart. Ils reviennent par défaut à chaque ouverture.',
+          'Pour l’installer : dans le menu du navigateur, <b>Ajouter à l’écran d’accueil</b>. Elle s’ouvre alors comme une vraie appli.'
+        ],
+        savoir: 'Sans réseau, seul le fond IGN s’affiche, pour les endroits déjà vus — les routes aussi restent en mémoire. Prépare tes carrefours chez toi sur le fond IGN : ils seront là en voiture.' },
+
+      { titre: 'En leçon : aller vite', sous: 'Les bons réflexes', fort: true,
+        etapes: [
+          '<b>Prépare chez toi, montre en voiture.</b> Les carrefours de ton secteur, enregistrés en cours et rangés par chapitre : en leçon, {biblio} → le cours → {lecture}. Deux appuis.',
+          '<b>En direct, reste léger.</b> Un point par virage, et {lecture}. La vitesse de la route et le suivi de route font le reste.',
+          '<b>Ne règle que ce qui compte.</b> Une vitesse sur le point avant le carrefour ; deux points égaux pour une zone, pas tous ceux du milieu.',
+          '<b>Lâche la pédale pour parler.</b> La pause, c’est le moment de la leçon. Les gestes se posent en roulant : un doigt sur {lecture}, l’autre sur la télécommande.',
+          '<b>Fais-le faire.</b> {menu} → Passer l’exercice, et tends le téléphone à l’élève : il trace, il roule, le verdict parle.',
+          '<b>Et pour la maison</b>, un QR code : il retrouve l’exercice chez lui.'
+        ] }
+    ]
+  },
+
+  eleve: {
+    titre: 'Guide de l’élève',
+    intro: 'Ton moniteur t’envoie des situations réelles : un carrefour, un giratoire, une insertion. À toi de conduire la voiture auto-école — le trajet, les vitesses, les gestes — et l’appli te dit ce qui est tenu et ce qui ne l’est pas.',
+    chapitres: [
+      { titre: 'Recevoir un exercice', sous: 'QR code ou lien',
+        etapes: [
+          'Vise le QR code de ton moniteur avec l’appareil photo de ton téléphone, ou ouvre le lien qu’il t’envoie.',
+          'L’exercice reste ensuite dans <b>Mes exercices</b> : la maison {maison} en haut à gauche y mène, avec ce qui est à faire et ce qui est déjà fait.'
+        ],
+        astuce: 'Dans le menu du navigateur, <b>Ajouter à l’écran d’accueil</b> : l’appli se retrouve d’un appui, comme les autres.' },
+
+      { titre: 'Tracer ton trajet', sous: 'Jusqu’au drapeau',
+        etapes: [
+          'Appuie sur la carte, point par point, jusqu’au drapeau à damier. Le trajet suit la route tout seul.',
+          'Fais glisser un point pour le déplacer. {gomme} en efface un, {annuler} revient en arrière.',
+          'Pour tout reprendre : <b>Tout effacer</b>, en bas de la feuille d’outils (le gros bouton en bas à gauche).'
+        ] },
+
+      { titre: 'Choisir tes vitesses', sous: 'Appui long sur un point',
+        etapes: [
+          'Sans rien régler, la voiture roule à la vitesse de la route.',
+          'Reste appuyé sur un point pour choisir sa vitesse. <b>Arrêt</b> : la voiture marque l’arrêt 3 secondes à cet endroit.'
+        ],
+        savoir: 'Trop vite dans un virage, la voiture part en glissade.' },
+
+      { titre: 'Rouler', sous: 'Maintiens le bouton de lecture',
+        etapes: [
+          'Maintiens {lecture} : la voiture avance tant que tu appuies, et s’arrête quand tu lâches.',
+          '{arret} la ramène au départ, et te rend les outils pour corriger.'
+        ] },
+
+      { titre: 'Faire tes gestes', sous: 'La télécommande',
+        etapes: [
+          'Pendant que ça roule, la télécommande remplace les outils : {cligno} clignotant, {retroInt} rétro intérieur, {retroExt} rétros extérieurs, {angle} angle mort, {regard} regard.',
+          'Appuie au bon moment, avec un autre doigt pendant que tu tiens {lecture}. Chaque geste laisse un carré sur ton trajet, et se rejoue au passage suivant.',
+          'Un carré mal placé ? À l’arrêt, fais-le glisser le long du trajet, ou efface-le à la {gomme}.'
+        ] },
+
+      { titre: 'Le verdict', sous: 'Le code et la méthode',
+        etapes: [
+          'À l’arrivée, l’appli dit ce qui a été tenu : <b>Le code</b> — arriver au drapeau, sans accrochage, céder le passage — et <b>Ma méthode</b> — ralentir à temps, faire les bons gestes avant de s’engager.',
+          'Vert, c’est tenu. Rouge, c’est là qu’il y a quelque chose à trouver.',
+          '<b>Recommencer</b> efface ton essai. Ton meilleur résultat reste dans « Mes exercices ».'
+        ] }
+    ]
+  }
+};
+
+const CHEVRON_GUIDE = '<svg class="chev" viewBox="0 0 22 22" aria-hidden="true" fill="none"'
+  + ' stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
+  + '<path d="m5.5 8.5 5.5 5.5 5.5-5.5"/></svg>';
+
+/* D'où l'on vient : le guide de l'élève ouvert depuis celui du moniteur y
+   ramène, au lieu de tout refermer. */
+let guidePrecedent = null;
+
+function ouvrirGuide(qui, depuis) {
+  const g = GUIDES[qui];
+  if (!g) return;
+  guidePrecedent = depuis || null;
+  ouvrirTiroir(false);
+  els.guTitre.textContent = g.titre;
+  const c = els.guCorps;
+  c.textContent = '';
+  const intro = document.createElement('p');
+  intro.className = 'gIntro';
+  intro.innerHTML = remplirGuide(g.intro);
+  c.appendChild(intro);
+
+  g.chapitres.forEach(function (ch, k) {
+    const sec = document.createElement('section');
+    sec.className = 'gChap' + (ch.fort ? ' fort' : '');
+    const tete = document.createElement('button');
+    tete.type = 'button'; tete.className = 'gTete';
+    tete.innerHTML = '<span class="gNum"></span><span class="deux"><span class="b1"></span>'
+                   + '<span class="b2"></span></span>' + CHEVRON_GUIDE;
+    tete.querySelector('.gNum').textContent = k + 1;
+    tete.querySelector('.b1').textContent = ch.titre;
+    tete.querySelector('.b2').textContent = ch.sous;
+
+    const corps = document.createElement('div');
+    corps.className = 'gCorps';
+    const ol = document.createElement('ol');
+    ch.etapes.forEach(function (e) {
+      const li = document.createElement('li');
+      li.innerHTML = remplirGuide(e);
+      ol.appendChild(li);
+    });
+    corps.appendChild(ol);
+    [['astuce', ch.astuce], ['savoir', ch.savoir]].forEach(function (n) {
+      if (!n[1]) return;
+      const p = document.createElement('p');
+      p.className = 'gNote ' + n[0];
+      p.innerHTML = remplirGuide(n[1]);
+      corps.appendChild(p);
+    });
+    if (ch.bouton) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'bord';
+      b.textContent = ch.bouton.texte;
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation(); ouvrirGuide(ch.bouton.guide, qui);
+      });
+      corps.appendChild(b);
+    }
+
+    /* Le premier chapitre est ouvert : on arrive, on lit. */
+    const ouvrir = function (o) {
+      corps.hidden = !o;
+      tete.setAttribute('aria-expanded', String(o));
+    };
+    ouvrir(k === 0);
+    tete.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      ouvrir(corps.hidden);
+      if (!corps.hidden) sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+    sec.appendChild(tete); sec.appendChild(corps);
+    c.appendChild(sec);
+  });
+
+  c.scrollTop = 0;
+  els.pageGuide.hidden = false;
+  const vu = lire(CLE_GUIDE) || {};
+  if (!vu[qui]) { vu[qui] = true; ecrire(CLE_GUIDE, vu); }
+}
+
+function fermerGuide() {
+  if (guidePrecedent) { ouvrirGuide(guidePrecedent); return; }
+  els.pageGuide.hidden = true;
+}
+
+els.btnGuide.addEventListener('click', function (ev) { ev.stopPropagation(); ouvrirGuide('moniteur'); });
+els.peGuide.addEventListener('click', function (ev) { ev.stopPropagation(); ouvrirGuide('eleve'); });
+els.guRetour.addEventListener('click', function (ev) { ev.stopPropagation(); fermerGuide(); });
+document.addEventListener('keydown', function (ev) {
+  if (ev.key === 'Escape' && !els.pageGuide.hidden) fermerGuide();
+});
+
 document.getElementById('version').textContent = 'Version ' + VERSION;
 majSource();
 dimensionner();
@@ -10651,6 +11076,8 @@ else if (eleveIci) accueillirEleve();
 else {
   if (chargerSeance(lire(CLE_COURANTE))) annoncer('Reprise de la séance en cours.');
   ouvrirOuJeSuis();
+  /* La première fois, le guide s'ouvre de lui-même — une seule fois. */
+  if (!(lire(CLE_GUIDE) || {}).moniteur) ouvrirGuide('moniteur');
 }
 
 if ('serviceWorker' in navigator) {
