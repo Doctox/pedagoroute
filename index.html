@@ -1496,7 +1496,7 @@ const GEOCODEUR = "https://data.geopf.fr/geocodage/search";
 /* Repère de construction, injecté par outils/construire.py. Affiché dans le
    tiroir : c'est le seul moyen sûr de savoir quelle version on regarde quand
    un cache s'en mêle. */
-const VERSION = "2026-09-28 15:24";
+const VERSION = "2026-09-28 15:37";
 
 const Z0 = 19;                               // zoom de référence
 const COTE = 256;
@@ -1574,7 +1574,60 @@ function limiteSous(p) {
 }
 
 /* Ce que vaut un point : son nombre s'il en a un, sinon la route. */
-function kmhDuPoint(p) { return p.v == null ? limiteSous(p) : p.v; }
+function kmhDuPoint(p) {
+  if (p.v != null) return p.v;
+  return p.vh != null ? p.vh : limiteSous(p);
+}
+
+/* UNE VITESSE ENCADRÉE S'ÉTEND ENTRE SES DEUX BORNES.
+
+   « J'ai mis deux points à 30 km/h sur le parcours ; j'aimerais que tous les
+   points entre ces deux points soient à 30, sauf si j'en ai modifié un à la
+   main. » C'est une zone : on en marque l'entrée et la sortie, et ce qui est
+   entre suit. Sans ça, la voiture reprenait la vitesse de la rue sur chaque
+   point intermédiaire — les points semés par le suivi de route surtout — et
+   repassait à 50 entre deux 30.
+
+   Trois règles, et chacune a sa raison :
+
+   - seuls les points SANS consigne héritent ; un point réglé à la main garde
+     sa valeur, ET il ne coupe pas la zone : 30 … 50 … 30 donne 30 partout
+     sauf au 50 ;
+   - il faut DEUX bornes de même vitesse. Un 30 isolé veut dire « 30 ici », pas
+     « 30 jusqu'à la fin » — c'est ce qu'il voulait dire dans tous les cours
+     déjà faits, et on ne le lui change pas sous les pieds ;
+   - l'arrêt ne s'étend jamais : deux STOP d'affilée ne font pas une rue où
+     l'on reste arrêté.
+
+   Quand deux zones s'emboîtent — 30 … 50 … 50 … 30 —, c'est la plus serrée qui
+   parle : entre les deux 50, on est à 50.
+
+   Le résultat est rangé sur le point, dans `vh` (vitesse héritée), et refait
+   à chaque calcul du chemin ; il n'est jamais enregistré. */
+function heriterVitesses(liste) {
+  const fixes = [];
+  liste.forEach(function (p, i) {
+    p.vh = null;
+    if (p.v != null && p.v > 0) fixes.push(i);
+  });
+  if (fixes.length < 2) return;
+  liste.forEach(function (p, i) {
+    if (p.v != null) return;
+    let mieux = null;
+    for (let a = fixes.length - 1; a >= 0; a--) {
+      if (fixes[a] >= i) continue;
+      const va = liste[fixes[a]].v;
+      for (let b = 0; b < fixes.length; b++) {
+        if (fixes[b] <= i) continue;
+        if (liste[fixes[b]].v !== va) continue;
+        const ecart = fixes[b] - fixes[a];
+        if (!mieux || ecart < mieux.ecart) mieux = { v: va, ecart: ecart };
+        break;                                   // la borne la plus proche à droite
+      }
+    }
+    if (mieux) p.vh = mieux.v;
+  });
+}
 const uParSec = kmh => (kmh / 3.6) / mParU;
 
 /* Les trois seuils qui donnent sa couleur à l'allure. Ils disent exactement ce
@@ -2420,6 +2473,7 @@ function construireChemin(depart, liste, ferme) {
   liste = liste || mesPoints();
   if (liste.length === 0) return null;
   majEchelle();
+  heriterVitesses(liste);
 
   /* DEUX SOMMETS CONFONDUS FONT UNE BOUCLE. La courbe de Catmull-Rom tire ses
      tangentes de la corde entre le point d'avant et celui d'après : deux
@@ -2488,7 +2542,7 @@ function construireChemin(depart, liste, ferme) {
      consigne prend la vitesse de la route sous lui. */
   /* Sur un circuit, un point sans consigne prend l'allure d'un giratoire, pas
      celle de l'avenue d'à côté. */
-  const kmhIci = p => (ferme && p.v == null)
+  const kmhIci = p => (ferme && p.v == null && p.vh == null)
     ? Math.min(BOUCLE_KMH, limiteSous(p)) : kmhDuPoint(p);
 
   const cible = new Float64Array(n);
@@ -9965,7 +10019,8 @@ function ouvrirChoixVitesse(pris) {
     const q = pointDeLaPrise(vitesseEnChoix);
     if (!q) return;
     tete.textContent = q.v == null
-      ? 'Vide = vitesse de la route (' + limite + ' km/h)'
+      ? (q.vh != null ? 'Vide = ' + q.vh + ' km/h, comme les deux points qui l’encadrent'
+                      : 'Vide = vitesse de la route (' + limite + ' km/h)')
       : (q.v === 0 ? 'Arrêt marqué — 3 secondes' : 'Consigne : ' + q.v + ' km/h');
     if (document.activeElement !== champ) champ.value = q.v == null ? '' : String(q.v);
   }
