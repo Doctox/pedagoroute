@@ -347,6 +347,15 @@ body.modeEleve #btnAction{ display:none !important; }
 body.vueEleve #btnLieu,
 body.vueEleve #tiroir{ display:none !important; }
 
+/* LA MAISON n'existe que chez l'élève : c'est le chemin vers ses exercices. */
+#btnAccueil{ display:none; }
+body.modeEleve #btnAccueil{ display:grid; }
+.platRond[hidden]{ display:none; }
+#peListe{ display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
+.crs .point.aRevoir{ background:var(--ambre); }
+.peVide{ margin:18px 4px; font-size:13px; line-height:1.5; color:var(--craie-2); }
+.peVide b{ color:var(--craie); }
+
 /* Le QR : blanc sur fond blanc, carré, le plus grand possible dans la feuille —
    l'appareil photo de l'élève le lit mieux s'il n'a pas à zoomer. */
 .cadreQr{ display:grid; place-items:center; padding:4px 0; }
@@ -1055,6 +1064,14 @@ button:focus-visible, .champ:focus-visible{ outline:3px solid #ffa63d; outline-o
     <!-- DEUX PASTILLES, EN MOTS. À gauche ce qu'on tient — et c'est le bouton
          pour en faire quelque chose. À droite la bibliothèque. -->
     <div class="coinBoutons">
+      <!-- Chez l'élève seulement : retour à « Mes exercices ». -->
+      <button class="versBiblio flottant" type="button" id="btnAccueil"
+              title="Mes exercices" aria-label="Mes exercices">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.5 10.4 12 4.3l7.5 6.1v7.9a1.2 1.2 0 0 1-1.2 1.2h-3.8v-5.6h-5v5.6H5.7a1.2 1.2 0 0 1-1.2-1.2z"/></svg>
+      </button>
+
       <button class="pastilleHaut flottant" type="button" id="btnAction"
               aria-haspopup="true" aria-expanded="false">
         <svg class="ico" viewBox="0 0 22 22" aria-hidden="true" fill="none"
@@ -1374,6 +1391,20 @@ button:focus-visible, .champ:focus-visible{ outline:3px solid #ffa63d; outline-o
 
   </div>
 
+  <!-- MES EXERCICES, chez l'élève. Même page que « Mes cours » : elle couvre
+       tout, on y choisit, on en ressort avec un exercice ouvert. -->
+  <div class="page" id="pageEleve" hidden>
+    <div class="page-tete">
+      <button class="platRond" type="button" id="peRetour" hidden
+              title="Retour à l’exercice" aria-label="Retour à l’exercice">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
+      </button>
+      <span class="page-titre">Mes exercices</span>
+    </div>
+    <div class="page-corps"><div id="peListe"></div></div>
+  </div>
+
   <div class="edition flottant" id="edition">
     <!-- Le volet d'un groupe : il s'ouvre au-dessus de la boîte, en colonne,
          et se referme dès qu'on a choisi. Neuf modes de front ne tiennent pas
@@ -1503,7 +1534,7 @@ const GEOCODEUR = "https://data.geopf.fr/geocodage/search";
 /* Repère de construction, injecté par outils/construire.py. Affiché dans le
    tiroir : c'est le seul moyen sûr de savoir quelle version on regarde quand
    un cache s'en mêle. */
-const VERSION = "2026-09-28 16:03";
+const VERSION = "2026-09-28 16:24";
 
 const Z0 = 19;                               // zoom de référence
 const COTE = 256;
@@ -2046,6 +2077,7 @@ const els = {};
  'choixVitesse','choixVehicule','suivis','fonds','serres','axes','trottoirs',
  'btnAction','btnGarder','btnBiblio','actions','feuilleGarder','bilan',
  'pageCours','voileCours','pcRetour','pcRanger','pcListe',
+ 'btnAccueil','pageEleve','peRetour','peListe',
  'btnPartager','btnColler','echangeTexte'].forEach(id => { els[id] = document.getElementById(id); });
 
 /* =================================================================
@@ -7864,6 +7896,7 @@ function montrerBilan() {
   const f = els.bilan;
   f.textContent = '';
   const tenus = bilan.filter(c => c.ok).length;
+  if (modeEleve) noterResultat(tenus, bilan.length);
 
   const tete = document.createElement('div');
   tete.className = 'tete';
@@ -8304,7 +8337,9 @@ function montrerEnvoi(e, lien) {
     });
   }
   bouton('Copier le lien', !navigator.share && !dessin, function () { copierTexte(lien); });
-  bouton('L’ouvrir comme l’élève', false, function () { window.open(lien, '_blank'); });
+  /* `&apercu` : le moniteur regarde, il ne reçoit pas l'exercice. Sans ça, son
+     propre téléphone se croirait celui d'un élève. */
+  bouton('L’ouvrir comme l’élève', false, function () { window.open(lien + '&apercu', '_blank'); });
   bouton('Fermer', false, function () { fermerBilan(); });
   f.hidden = false;
 }
@@ -8333,16 +8368,22 @@ function copierTexte(txt) {
 }
 
 /* ---------- côté élève ---------- */
-async function ouvrirExerciceEleve(code) {
+async function ouvrirExerciceEleve(code, apercu) {
   modeEleve = true;
   document.body.classList.add('modeEleve');
   let x = null;
   try { x = await depuisLien(code); } catch (err) {}
-  if (!x || x.v !== 1 || !x.scene || !chargerSeance(x.scene)) {
+  if (!x || x.v !== 1 || !x.scene) {
+    annoncer('Ce lien d’exercice est illisible — demandez-en un autre.');
+    return;
+  }
+  fermerBilan();                   // le verdict d'un autre exercice ne suit pas
+  if (!chargerSeance(x.scene)) {
     annoncer('Ce lien d’exercice est illisible — demandez-en un autre.');
     return;
   }
   exerciceRecu = x;
+  exoOuvert = apercu ? null : retenirExercice(code, x.nom || 'Exercice');
   /* On entre en essai directement, sans passer par `poserVueEleve` : il n'y a
      pas de modèle à relever, l'attendu est arrivé avec le lien. */
   vueEleve = true;
@@ -8354,6 +8395,164 @@ async function ouvrirExerciceEleve(code) {
   redessiner(); majCurseur(); majCommandes();
   montrerConsigne();
 }
+
+/* =================================================================
+   L'ACCUEIL DE L'ÉLÈVE
+   =================================================================
+   « Sur le côté élève tu peux pas lui faire un Home dans l'exercice pour qu'il
+   puisse atterrir sur son home ? »
+
+   Sans compte et sans serveur, c'est le TÉLÉPHONE qui se souvient. Chaque lien
+   d'exercice ouvert y est retenu — son nom, son code, ce qu'il a donné — et
+   « Mes exercices » les range en deux : à faire, déjà faits. Un même lien
+   ouvert deux fois reste un seul exercice : on le reconnaît à son code.
+
+   QUI EST ÉLÈVE. Un téléphone qui a reçu des exercices et qui n'a jamais servi
+   au moniteur — voir `aServiAuMoniteur`. Celui-là, ouvert
+   sans lien (l'icône, l'adresse tapée), arrive sur « Mes exercices » et jamais
+   sur l'outil du moniteur. `#moniteur` au bout de l'adresse force l'outil : la
+   porte de secours d'un moniteur qui aurait d'abord reçu l'exercice d'un
+   collègue. Ce n'est pas une serrure — il n'y en a pas sans serveur — c'est un
+   aiguillage. */
+const CLE_ELEVE = 'pedago.eleve.v1';
+let exoOuvert = null;              // l'exercice à l'écran, dans la liste de l'élève
+
+function lireEleve() {
+  const d = lire(CLE_ELEVE);
+  return (d && Array.isArray(d.exos)) ? d : { v: 1, exos: [] };
+}
+
+function empreinte(code) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < code.length; i++) { h ^= code.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return 'x' + (h >>> 0).toString(36) + code.length.toString(36);
+}
+
+function retenirExercice(code, nom) {
+  const d = lireEleve();
+  const id = empreinte(code);
+  let e = d.exos.find(x => x.id === id);
+  if (!e) {
+    e = { id: id, nom: nom, code: code, recu: Date.now(), essais: 0,
+          meilleur: null, dernier: null };
+    d.exos.unshift(e);
+  }
+  e.vu = Date.now();
+  ecrire(CLE_ELEVE, d);
+  return id;
+}
+
+/* Chaque course jugée compte : la dernière, et la meilleure. */
+function noterResultat(tenus, total) {
+  if (!exoOuvert || !total) return;
+  const d = lireEleve();
+  const e = d.exos.find(x => x.id === exoOuvert);
+  if (!e) return;
+  e.essais = (e.essais || 0) + 1;
+  e.dernier = { tenus: tenus, total: total, quand: Date.now() };
+  if (!e.meilleur || tenus / total > e.meilleur.tenus / e.meilleur.total)
+    e.meilleur = { tenus: tenus, total: total };
+  ecrire(CLE_ELEVE, d);
+}
+
+/* « A servi au moniteur », c'est y avoir CONSTRUIT quelque chose : un cours
+   rangé, ou une carte en cours qui porte un tracé, un véhicule, un camembert.
+   Pas seulement une carte en cours : il suffit d'avoir ouvert l'adresse une
+   fois, par curiosité, pour que la position GPS y soit gardée. */
+function aServiAuMoniteur() {
+  const b = lire(CLE_BIBLIO);
+  if (b && b.cours && b.cours.length) return true;
+  const c = lire(CLE_COURANTE);
+  return !!(c && ((c.points || []).length || (c.obstacles || []).length
+                  || (c.camemberts || []).length));
+}
+
+function appareilDEleve() {
+  return lireEleve().exos.length > 0 && !aServiAuMoniteur();
+}
+
+function dateCourte(ms) {
+  return new Date(ms).toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+}
+
+function carteExercice(e) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'crs';
+  if (e.id === exoOuvert) b.setAttribute('aria-current', 'true');
+  b.innerHTML = '<span class="point"></span>'
+              + '<span class="deux"><span class="b1"></span><span class="b2"></span></span>';
+  const m = e.meilleur, parfait = !!(m && m.tenus === m.total);
+  b.querySelector('.point').classList.add(!e.dernier ? 'pret' : parfait ? 'envoye' : 'aRevoir');
+  b.querySelector('.b1').textContent = e.nom;
+  const n = e.essais || 0;
+  b.querySelector('.b2').textContent = !e.dernier
+    ? 'Reçu le ' + dateCourte(e.recu)
+    : (parfait ? 'Rien à redire' : 'Meilleur : ' + m.tenus + ' sur ' + m.total)
+      + ' · ' + n + (n > 1 ? ' essais' : ' essai');
+  b.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    ouvrirPageEleve(false);
+    if (e.id === exoOuvert) return;        // c'est celui qu'on avait sous les yeux
+    try { history.replaceState(null, '', location.pathname + location.search + '#exo=' + e.code); }
+    catch (err) {}
+    ouvrirExerciceEleve(e.code);
+  });
+  return b;
+}
+
+function majPageEleve() {
+  const l = els.peListe;
+  l.textContent = '';
+  const exos = lireEleve().exos;
+  if (!exos.length) {
+    const p = document.createElement('p');
+    p.className = 'peVide';
+    p.innerHTML = '<b>Pas encore d’exercice.</b><br>'
+                + 'Ton moniteur t’en envoie un par QR code ou par lien : '
+                + 'une fois ouvert, il reste ici.';
+    l.appendChild(p);
+    return;
+  }
+  const aFaire = exos.filter(e => !e.dernier);
+  const faits = exos.filter(e => e.dernier)
+                    .sort((a, b) => b.dernier.quand - a.dernier.quand);
+  [['À faire', aFaire], ['Déjà faits', faits]].forEach(function (s) {
+    if (!s[1].length) return;
+    const t = document.createElement('p');
+    t.className = 'sousTitre';
+    t.textContent = s[0];
+    l.appendChild(t);
+    s[1].forEach(e => l.appendChild(carteExercice(e)));
+  });
+}
+
+function ouvrirPageEleve(ouvert) {
+  els.pageEleve.hidden = !ouvert;
+  if (!ouvert) return;
+  /* La course s'arrête : elle finirait sous la page, et son verdict avec. */
+  arreter(); redessiner(); majCommandes();
+  els.peRetour.hidden = !exerciceRecu;
+  majPageEleve();
+}
+
+/* Ouvert sans lien, sur le téléphone d'un élève : on arrive chez lui. */
+function accueillirEleve() {
+  modeEleve = true;
+  document.body.classList.add('modeEleve');
+  vueEleve = true;
+  marquerVueEleve();
+  obstacleActif = -1;
+  outil = 'point'; outilPose = 'point';
+  majCurseur(); majCommandes();
+  ouvrirPageEleve(true);
+}
+
+els.btnAccueil.addEventListener('click', function (ev) {
+  ev.stopPropagation(); ouvrirPageEleve(true);
+});
+els.peRetour.addEventListener('click', function (ev) {
+  ev.stopPropagation(); ouvrirPageEleve(false);
+});
 
 /* La consigne, à l'ouverture : ce qu'il y a à faire, en quatre lignes, et un
    seul bouton. Elle ne décrit pas la situation — ce serait déjà répondre. */
@@ -10430,10 +10629,13 @@ majCommandes();
 /* On reprend le cours sur lequel on travaillait, s'il est toujours là. */
 /* UN LIEN D'EXERCICE OUVRE LA PARTIE ÉLÈVE, et rien du moniteur ne se charge :
    ni son cours ouvert, ni la carte qu'il avait laissée. */
-const codeExercice = (location.hash.match(/^#exo=(.+)$/) || [])[1] || null;
+const lienExercice = location.hash.match(/^#exo=([^&]+)(&apercu)?/) || [];
+const codeExercice = lienExercice[1] || null;
+/* Ouvert sans lien sur le téléphone d'un élève : voir « L'ACCUEIL DE L'ÉLÈVE ». */
+const eleveIci = !codeExercice && location.hash !== '#moniteur' && appareilDEleve();
 
 (function reprendreCoursOuvert() {
-  if (codeExercice) return;
+  if (codeExercice || eleveIci) return;
   const id = lire(CLE_OUVERT);
   if (!id) return;
   if (!coursPar(lireBiblio(), id)) { ecrire(CLE_OUVERT, null); return; }
@@ -10444,7 +10646,8 @@ const codeExercice = (location.hash.match(/^#exo=(.+)$/) || [])[1] || null;
    leçon est ce qui arrive le plus souvent, et c'est toujours urgent — passer
    par un menu pour choisir « une explication » était une porte pour rien. */
 majBandeau();
-if (codeExercice) ouvrirExerciceEleve(codeExercice);
+if (codeExercice) ouvrirExerciceEleve(codeExercice, !!lienExercice[2]);
+else if (eleveIci) accueillirEleve();
 else {
   if (chargerSeance(lire(CLE_COURANTE))) annoncer('Reprise de la séance en cours.');
   ouvrirOuJeSuis();
