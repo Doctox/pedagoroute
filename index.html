@@ -340,6 +340,13 @@ body.modeEleve #btnGarder,
 body.modeEleve #btnBiblio,
 body.modeEleve #btnAction{ display:none !important; }
 
+/* NI LOUPE NI RÉGLAGES EN VUE ÉLÈVE — chez l'élève comme sur le banc d'essai
+   du moniteur. Chercher un lieu, c'est quitter l'exercice ; montrer l'axe des
+   routes ou changer le fond, c'est changer ce qu'on lui donne à lire. La
+   situation est posée, on la résout telle quelle. */
+body.vueEleve #btnLieu,
+body.vueEleve #tiroir{ display:none !important; }
+
 /* Le QR : blanc sur fond blanc, carré, le plus grand possible dans la feuille —
    l'appareil photo de l'élève le lit mieux s'il n'a pas à zoomer. */
 .cadreQr{ display:grid; place-items:center; padding:4px 0; }
@@ -1496,7 +1503,7 @@ const GEOCODEUR = "https://data.geopf.fr/geocodage/search";
 /* Repère de construction, injecté par outils/construire.py. Affiché dans le
    tiroir : c'est le seul moyen sûr de savoir quelle version on regarde quand
    un cache s'en mêle. */
-const VERSION = "2026-09-28 15:51";
+const VERSION = "2026-09-28 16:03";
 
 const Z0 = 19;                               // zoom de référence
 const COTE = 256;
@@ -5460,6 +5467,7 @@ function poserVueEleve(v) {
   if (!vueEleve && v) releverAttendu();
   fermerBilan();
   vueEleve = !!v;
+  marquerVueEleve();
   /* ON ENTRE EN ESSAI LES MAINS VIDES. Un véhicule resté sélectionné emportait
      les points de l'essai dans SA trajectoire : on appuyait, rien n'apparaissait
      — `dessinerPoints` se tait quand un véhicule est choisi — et le tracé de
@@ -5475,6 +5483,13 @@ function poserVueEleve(v) {
   }
   arreter();
   redessiner();
+}
+
+/* Le corps porte la vue : c'est la feuille de style qui range ce que
+   l'élève n'a pas à toucher. Le volet, s'il était ouvert, se referme. */
+function marquerVueEleve() {
+  document.body.classList.toggle('vueEleve', vueEleve);
+  if (vueEleve) ouvrirTiroir(false);
 }
 
 function dessinerDrapeau() {
@@ -8331,6 +8346,7 @@ async function ouvrirExerciceEleve(code) {
   /* On entre en essai directement, sans passer par `poserVueEleve` : il n'y a
      pas de modèle à relever, l'attendu est arrivé avec le lien. */
   vueEleve = true;
+  marquerVueEleve();
   attendu = x.attendu || null;
   obstacleActif = -1;
   outil = 'point'; outilPose = 'point';
